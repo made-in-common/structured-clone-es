@@ -1,6 +1,8 @@
 allowBuilds:
   esbuild: true
   simple-git-hooks: true
+minimumReleaseAgeExclude:
+  - bumpp@12.1.1
 shellEmulator: true
 trustPolicy: no-downgrade
 packages:
