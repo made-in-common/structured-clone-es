@@ -87,6 +87,33 @@ describe('structured-clone', () => {
     })
   })
 
+  describe('security: malicious deserialization', () => {
+    it('should not construct arbitrary globals via the type-7 (Error) path', () => {
+      // A crafted record naming `Function` must NOT produce an executable
+      // function (`new Function(message)`); it should degrade to a plain Error.
+      const evil = deserialize([[7, { name: 'Function', message: 'return 1337' }]])
+      expect(typeof evil).not.toBe('function')
+      expect(evil).toBeInstanceOf(Error)
+      expect(evil.message).toBe('return 1337')
+    })
+
+    it('should reject arbitrary globals via the fallback dispatch path', () => {
+      expect(() => deserialize([['Function', 'return 1337']])).toThrow(TypeError)
+    })
+
+    it('should not be exploitable through the JSON parse() entrypoint', () => {
+      const evil = parse('[[7,{"name":"Function","message":"return 1337"}]]')
+      expect(typeof evil).not.toBe('function')
+      expect(evil).toBeInstanceOf(Error)
+    })
+
+    it('should still reconstruct standard Error subclasses safely', () => {
+      const err = deserialize([[7, { name: 'TypeError', message: 'boom' }]])
+      expect(err).toBeInstanceOf(TypeError)
+      expect(err.message).toBe('boom')
+    })
+  })
+
   describe('structuredClone', () => {
     it('should clone objects', () => {
       const cloned = structuredClone(obj)
